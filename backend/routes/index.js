@@ -1,0 +1,15 @@
+import express from 'express';
+import multer from 'multer';
+import uploadController from '../controllers/uploadController.js';
+import askController from '../controllers/askController.js';
+import removeFileRouter from './removeFile.js';
+
+const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
+
+
+router.post('/upload', upload.single('file'), uploadController);
+router.post('/ask', askController);
+router.use(removeFileRouter);
+
+export default router;
