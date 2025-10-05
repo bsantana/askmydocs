@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import formatResponseSafe from '../utils/formatResponseSafe';
-// SVGs simples para ícones
 import { Upload, FileText, Send } from 'lucide-react';
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import formatResponseSafe from '../utils/formatResponseSafe';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function ChatApp() {
-  const [docs, setDocs] = useState([
-    { id: 1, name: "contrato1.pdf", status: "done" },
-    { id: 2, name: "regulamento.docx", status: "processing" },
-    { id: 3, name: "recibo.pdf", status: "done" }
-  ]);
+  const [docs, setDocs] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("");
   const fileInputRef = useRef(null);
   const [messages, setMessages] = useState([]);
@@ -55,6 +49,12 @@ export default function ChatApp() {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const tempId = Date.now();
+    // Adiciona à lista com status 'processing'
+    setDocs(docs => [
+      ...docs,
+      { id: tempId, name: file.name, status: 'processing' }
+    ]);
     setUploadStatus('Enviando...');
     const formData = new FormData();
     formData.append('file', file);
@@ -64,13 +64,22 @@ export default function ChatApp() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadStatus(res.data.message || 'Arquivo enviado!');
-      // Adiciona à lista de docs
-      setDocs(docs => [
-        ...docs,
-        { id: Date.now(), name: file.name, status: 'done' }
-      ]);
+      // Atualiza status para 'done'
+      setDocs(docs =>
+        docs.map(doc =>
+          doc.id === tempId ? { ...doc, status: 'done' } : doc
+        )
+      );
+  toast.success(`Documento "${file.name}" carregado com sucesso!`);
     } catch {
       setUploadStatus('Erro ao enviar arquivo');
+      // Atualiza status para erro
+      setDocs(docs =>
+        docs.map(doc =>
+          doc.id === tempId ? { ...doc, status: 'erro' } : doc
+        )
+      );
+  toast.error(`Erro ao enviar "${file.name}"!`);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -88,6 +97,7 @@ export default function ChatApp() {
 
   return (
     <div style={{height: '100vh', display: 'flex', fontFamily: 'sans-serif', background: '#f3f4f6'}}>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover theme="colored" />
       {/* Sidebar */}
       <aside style={{width: 260, minWidth: 220, background: '#f9fafb', borderRight: '1px solid #e5e7eb', padding: 20, display: 'flex', flexDirection: 'column', height: '100vh'}}>
         <h2 style={{fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 16}}>
