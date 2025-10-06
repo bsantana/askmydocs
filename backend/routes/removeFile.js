@@ -8,16 +8,32 @@ const router = express.Router();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 router.post('/remove-file', async (req, res) => {
-  const { filename } = req.body;
-  if (!filename) return res.status(400).json({ error: 'Nome do arquivo não informado.' });
+  const { originalname } = req.body;
+  if (!originalname) return res.status(400).json({ error: 'Nome original do arquivo não informado.' });
 
   try {
+    // Busca o metadado correspondente ao nome original
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    const files = fs.readdirSync(uploadsDir);
+    const metaFile = files.find(f => f.endsWith('.json') && (() => {
+      try {
+        const meta = JSON.parse(fs.readFileSync(path.join(uploadsDir, f)));
+        return meta.originalname === originalname;
+      } catch {
+        return false;
+      }
+    })());
+    if (!metaFile) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    const meta = JSON.parse(fs.readFileSync(path.join(uploadsDir, metaFile)));
+    const filename = meta.filename;
+
     await removeFileFromChroma(filename);
     // Remove do disco
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
     const filePath = path.join(uploadsDir, filename);
+    const metaPath = path.join(uploadsDir, filename + '.json');
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.json({ message: 'Arquivo e dados removidos com sucesso.' });
+    if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+    res.json({ message: 'Arquivo e metadados removidos com sucesso.' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao remover arquivo.', details: err.message });
   }

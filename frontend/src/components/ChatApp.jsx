@@ -14,7 +14,26 @@ export default function ChatApp() {
   const chatRef = useRef(null);
 
   // Carrega lista de arquivos enviados
-  // Removido o fetchDocs para manter os mocks
+    // Carrega lista de arquivos enviados do backend
+    useEffect(() => {
+      async function fetchDocs() {
+        try {
+          const apiUrl = process.env.API_URL || '';
+          const res = await axios.get(`${apiUrl}/api/docs`);
+          if (Array.isArray(res.data.documents)) {
+            setDocs(res.data.documents.map((doc, idx) => ({
+              id: idx + 1,
+              name: doc.originalname || doc.filename,
+              status: 'done',
+              ...doc
+            })));
+          }
+        } catch {
+          // Se erro, mantém lista vazia
+        }
+      }
+      fetchDocs();
+    }, []);
 
   // Carrega histórico de mensagens (opcional, pode ser mock)
   useEffect(() => {
@@ -88,7 +107,10 @@ export default function ChatApp() {
   async function handleRemoveDoc(docId, docName) {
     try {
       const apiUrl = process.env.API_URL || '';
-      await axios.post(`${apiUrl}/api/remove-file`, { filename: docName });
+      // Busca o documento pelo id para pegar o originalname
+      const doc = docs.find(d => d.id === docId);
+      const originalname = doc?.originalname || docName;
+      await axios.post(`${apiUrl}/api/remove-file`, { originalname });
       setDocs(docs => docs.filter(d => d.id !== docId));
     } catch {
       alert('Erro ao remover documento do servidor.');

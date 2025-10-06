@@ -38,6 +38,7 @@ export async function queryChroma(query, topK = 10) {
   });
   // Retorna array de objetos: { text, page, originalname }
   const docs = results.documents?.[0] || [];
+  console.log('Chroma query results:', results);
   const metas = results.metadatas?.[0] || [];
   return docs.map((text, i) => ({
     text,
